@@ -20,6 +20,45 @@ jobs:
           sudo xcode-select -s /Applications/Xcode.app
           xcodebuild -version
 
+      - name: Exclude duplicate legacy Queue source
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          project = Path("Cider Remote.xcodeproj/project.pbxproj")
+          contents = project.read_text()
+          exception_id = "C0FFEE000000000000000001"
+          marker = "/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */"
+          root_group = '''\t\tB998C12B2EA2B54500FF1517 /* Cider Remote */ = {
+          \t\t\tisa = PBXFileSystemSynchronizedRootGroup;
+          \t\t\tpath = "Cider Remote";
+          \t\t\tsourceTree = "<group>";
+          \t\t};'''
+          root_group_with_exception = f'''\t\tB998C12B2EA2B54500FF1517 /* Cider Remote */ = {{
+          \t\t\tisa = PBXFileSystemSynchronizedRootGroup;
+          \t\t\texceptions = (
+          \t\t\t\t{exception_id} /* Exclude legacy Queue.swift from app target */,
+          \t\t\t);
+          \t\t\tpath = "Cider Remote";
+          \t\t\tsourceTree = "<group>";
+          \t\t}};'''
+          exception = f'''\t\t{exception_id} /* Exclude legacy Queue.swift from app target */ = {{
+          \t\t\tisa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+          \t\t\tmembershipExceptions = (
+          \t\t\t\t"Data/Queue.swift",
+          \t\t\t);
+          \t\t\ttarget = FA14E3462C7CA1C200904A49 /* Cider Remote */;
+          \t\t}};
+          '''
+
+          if exception_id not in contents:
+              if root_group not in contents or marker not in contents:
+                  raise SystemExit("Could not find expected Xcode project sections; refusing to alter the project")
+              contents = contents.replace(root_group, root_group_with_exception, 1)
+              contents = contents.replace(marker, exception + marker, 1)
+              project.write_text(contents)
+          PY
+
       - name: Build Archive
         run: |
           xcodebuild -project "Cider Remote.xcodeproj" \
