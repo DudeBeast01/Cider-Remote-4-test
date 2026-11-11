@@ -2,7 +2,7 @@ name: Build iOS App
 
 on:
   push:
-    branches: [ v4, main ]
+    branches: [v4, main]
   workflow_dispatch:
 
 jobs:
@@ -67,8 +67,6 @@ jobs:
           PY
 
       - name: Build unsigned archive
-        env:
-          ARCHIVE_PATH: "${{ runner.temp }}/CiderRemote.xcarchive"
         run: |
           xcodebuild \
             -project "$XCODE_PROJECT" \
