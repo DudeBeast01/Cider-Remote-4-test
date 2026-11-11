@@ -3,6 +3,7 @@ name: Build iOS App
 on:
   push:
     branches: [ v4, main ]
+  workflow_dispatch:
 
 jobs:
   build:
