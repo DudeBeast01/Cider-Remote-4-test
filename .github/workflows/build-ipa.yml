@@ -57,7 +57,6 @@ jobs:
           \t\t\ttarget = FA14E3462C7CA1C200904A49 /* Cider Remote */;
           \t\t}};
           '''
-
           if exception_id not in contents:
               if root_group not in contents or marker not in contents:
                   raise SystemExit("Could not find expected Xcode project sections; refusing to alter the project")
