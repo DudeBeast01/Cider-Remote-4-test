@@ -7,14 +7,14 @@ on:
 
 jobs:
   build:
-    name: Build and Archive iOS App
+    name: Build Unsigned iOS IPA
     runs-on: macos-latest
 
     env:
       XCODE_PROJECT: "Cider Remote.xcodeproj"
       XCODE_SCHEME: "Cider Remote"
       ARCHIVE_PATH: ${{ runner.temp }}/CiderRemote.xcarchive
-      EXPORT_PATH: ${{ runner.temp }}/CiderRemoteIPA
+      IPA_STAGING_PATH: ${{ runner.temp }}/ipa-staging
 
     steps:
       - name: Checkout Repository
@@ -27,38 +27,46 @@ jobs:
           sudo xcode-select -s /Applications/Xcode.app
           xcodebuild -version
 
-      - name: Validate signing secrets
-        shell: bash
+      - name: Exclude duplicate legacy Queue source
         run: |
-          if [ -z "${{ secrets.APPLE_CERTIFICATE }}" ] || [ -z "${{ secrets.APPLE_CERTIFICATE_PASSWORD }}" ] || [ -z "${{ secrets.APPLE_TEAM_ID }}" ] || [ -z "${{ secrets.MOBILE_PROVISIONING_PROFILE }}" ]; then
-            echo "Missing required signing secrets: APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD, APPLE_TEAM_ID, MOBILE_PROVISIONING_PROFILE"
-            echo "A real installable .ipa cannot be produced without valid signing credentials."
-            exit 1
-          fi
+          python3 - <<'PY'
+          from pathlib import Path
 
-      - name: Install signing certificate and provisioning profile
-        shell: bash
-        env:
-          CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          PROFILE: ${{ secrets.MOBILE_PROVISIONING_PROFILE }}
-          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD || 'temporary-keychain-password' }}
-        run: |
-          set -e
-          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | sed 's/"//g')
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          project = Path("Cider Remote.xcodeproj/project.pbxproj")
+          contents = project.read_text()
+          exception_id = "C0FFEE000000000000000001"
+          marker = "/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */"
+          root_group = '''\t\tB998C12B2EA2B54500FF1517 /* Cider Remote */ = {
+          \t\t\tisa = PBXFileSystemSynchronizedRootGroup;
+          \t\t\tpath = "Cider Remote";
+          \t\t\tsourceTree = "<group>";
+          \t\t};'''
+          root_group_with_exception = f'''\t\tB998C12B2EA2B54500FF1517 /* Cider Remote */ = {{
+          \t\t\tisa = PBXFileSystemSynchronizedRootGroup;
+          \t\t\texceptions = (
+          \t\t\t\t{exception_id} /* Exclude legacy Queue.swift from app target */,
+          \t\t\t);
+          \t\t\tpath = "Cider Remote";
+          \t\t\tsourceTree = "<group>";
+          \t\t}};'''
+          exception = f'''\t\t{exception_id} /* Exclude legacy Queue.swift from app target */ = {{
+          \t\t\tisa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+          \t\t\tmembershipExceptions = (
+          \t\t\t\t"Data/Queue.swift",
+          \t\t\t);
+          \t\t\ttarget = FA14E3462C7CA1C200904A49 /* Cider Remote */;
+          \t\t}};
+          '''
 
-          echo "$CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
-          security import "$RUNNER_TEMP/certificate.p12" -P "$CERTIFICATE_PASSWORD" -A -t agg -f pkcs12 -k "$KEYCHAIN_PATH"
+          if exception_id not in contents:
+              if root_group not in contents or marker not in contents:
+                  raise SystemExit("Could not find expected Xcode project sections; refusing to alter the project")
+              contents = contents.replace(root_group, root_group_with_exception, 1)
+              contents = contents.replace(marker, exception + marker, 1)
+              project.write_text(contents)
+          PY
 
-          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-          echo "$PROFILE" | base64 --decode > "$RUNNER_TEMP/profile.mobileprovision"
-          cp "$RUNNER_TEMP/profile.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/"
-
-      - name: Build archive
+      - name: Build unsigned archive
         run: |
           xcodebuild \
             -project "$XCODE_PROJECT" \
@@ -66,40 +74,25 @@ jobs:
             -sdk iphoneos \
             -configuration Release \
             -archivePath "$ARCHIVE_PATH" \
-            -allowProvisioningUpdates \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
             archive
 
-      - name: Export IPA
+      - name: Package unsigned IPA
+        shell: bash
         run: |
-          cat > exportOptions.plist <<PLIST
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>ad-hoc</string>
-              <key>teamID</key>
-              <string>${{ secrets.APPLE_TEAM_ID }}</string>
-              <key>signingStyle</key>
-              <string>manual</string>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>sh.cidercollective.Cider-Remote</key>
-                  <string>${{ secrets.PROVISIONING_PROFILE_NAME || 'Cider Remote' }}</string>
-              </dict>
-          </dict>
-          </plist>
-          PLIST
+          set -euo pipefail
+          APP_PATH="$ARCHIVE_PATH/Products/Applications/Cider Remote.app"
+          test -d "$APP_PATH" || { echo "Archived app not found at: $APP_PATH"; exit 1; }
+          mkdir -p "$IPA_STAGING_PATH/Payload"
+          cp -R "$APP_PATH" "$IPA_STAGING_PATH/Payload/"
+          (cd "$IPA_STAGING_PATH" && /usr/bin/zip -qr "$RUNNER_TEMP/CiderRemote-unsigned.ipa" Payload)
+          test -s "$RUNNER_TEMP/CiderRemote-unsigned.ipa"
 
-          xcodebuild \
-            -archivePath "$ARCHIVE_PATH" \
-            -exportArchive \
-            -exportPath "$EXPORT_PATH" \
-            -exportOptionsPlist exportOptions.plist
-
-      - name: Upload IPA artifact
+      - name: Upload unsigned IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Cider-Remote-IPA
-          path: ${{ runner.temp }}/CiderRemoteIPA/*.ipa
+          name: Cider-Remote-unsigned-IPA
+          path: ${{ runner.temp }}/CiderRemote-unsigned.ipa
           if-no-files-found: error
