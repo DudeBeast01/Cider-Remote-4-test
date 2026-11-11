@@ -12,7 +12,7 @@
 		B9A455622CC51C19006AEB89 /* SocketIO in Frameworks */ = {isa = PBXBuildFile; productRef = B9A455612CC51C19006AEB89 /* SocketIO */; };
 		B9CDA83D2CC686AA00FBF580 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B9CDA83C2CC686AA00FBF580 /* WidgetKit.framework */; };
 		B9CDA83F2CC686AA00FBF580 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B9CDA83E2CC686AA00FBF580 /* SwiftUI.framework */; };
-		B9CDA84C2CC686AC00FBF580 /* NowPlayingExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B9CDA83A2CC686AA00FBF580 /* NowPlayingExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B9CDA84C2CC686AC00FBF580 /* NowPlayingExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B9CDA83A2CC686AA00FBF580 /* NowPlayingExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, );}; };
 		B9CDA87B2CC6905C00FBF580 /* SocketIO in Frameworks */ = {isa = PBXBuildFile; productRef = B9CDA87A2CC6905C00FBF580 /* SocketIO */; };
 /* End PBXBuildFile section */
 
@@ -59,16 +59,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		B998C1862EA2B54500FF1517 /* Exceptions for "Cider Remote" folder in "NowPlayingExtension" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				AppDelegate.swift,
-				AppIcon.icon,
-				Cider_RemoteApp.swift,
-				"Preview Content/Preview Assets.xcassets",
-			);
-			target = B9CDA8392CC686AA00FBF580 /* NowPlayingExtension */;
-		};
 		B9E7DA032D0125E800840996 /* Exceptions for "NowPlaying" folder in "Cider Remote" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -95,9 +85,6 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		B998C12B2EA2B54500FF1517 /* Cider Remote */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				B998C1862EA2B54500FF1517 /* Exceptions for "Cider Remote" folder in "NowPlayingExtension" target */,
-			);
 			path = "Cider Remote";
 			sourceTree = "<group>";
 		};
@@ -181,7 +168,6 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				B998C12B2EA2B54500FF1517 /* Cider Remote */,
 				B9E7D9FC2D0125E800840996 /* NowPlaying */,
 			);
 			name = NowPlayingExtension;
