@@ -1,5 +1,6 @@
 import SwiftUI
 import Foundation
+import ActivityKit
 
 extension UserDefaults {
     static var main: UserDefaults {
@@ -59,5 +60,28 @@ struct Track: Identifiable, Codable, Hashable {
         self.artwork = artwork
         self.duration = duration
         self.artworkData = artworkData
+    }
+}
+
+struct LiveActivityManager {
+    struct DisplayingTrack: Identifiable, Codable, Equatable {
+        let id: String
+        let title: String
+        let artist: String
+        let artworkURL: URL?
+
+        init(title: String, artist: String, artworkURL: URL? = nil) {
+            self.id = UUID().uuidString
+            self.title = title
+            self.artist = artist
+            self.artworkURL = artworkURL
+        }
+
+        init(from track: Track) {
+            self.id = track.id
+            self.title = track.title
+            self.artist = track.artist
+            self.artworkURL = URL(string: track.artwork)
+        }
     }
 }
