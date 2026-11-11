@@ -2,7 +2,7 @@ name: Build iOS App
 
 on:
   push:
-    branches: [ v4, main ] # Adjust to your active branch name
+    branches: [ v4, main ]
 
 jobs:
   build:
@@ -22,8 +22,8 @@ jobs:
 
       - name: Build Archive
         run: |
-          xcodebuild -project CiderRemote.xcodeproj \
-            -scheme CiderRemote \
+          xcodebuild -project "Cider Remote.xcodeproj" \
+            -scheme "Cider Remote" \
             -sdk iphoneos \
             -configuration Release \
             -archivePath $RUNNER_TEMP/CiderRemote.xcarchive \
