@@ -10,11 +10,11 @@ jobs:
     name: Build Unsigned iOS IPA
     runs-on: macos-latest
 
-    env:
+        env:
       XCODE_PROJECT: "Cider Remote.xcodeproj"
       XCODE_SCHEME: "Cider Remote"
-      ARCHIVE_PATH: "${{ runner.temp }}/CiderRemote.xcarchive"
-      IPA_OUTPUT: "${{ runner.temp }}/CiderRemote-unsigned.ipa"
+      ARCHIVE_PATH: "CiderRemote.xcarchive"
+      IPA_OUTPUT: "CiderRemote-unsigned.ipa"
 
     steps:
       - name: Checkout Repository
