@@ -13,8 +13,8 @@ jobs:
     env:
       XCODE_PROJECT: "Cider Remote.xcodeproj"
       XCODE_SCHEME: "Cider Remote"
-      ARCHIVE_PATH: ${{ runner.temp }}/CiderRemote.xcarchive
-      IPA_OUTPUT: ${{ runner.temp }}/CiderRemote-unsigned.ipa
+      ARCHIVE_PATH: "${{ runner.temp }}/CiderRemote.xcarchive"
+      IPA_OUTPUT: "${{ runner.temp }}/CiderRemote-unsigned.ipa"
 
     steps:
       - name: Checkout Repository
@@ -67,6 +67,8 @@ jobs:
           PY
 
       - name: Build unsigned archive
+        env:
+          ARCHIVE_PATH: "${{ runner.temp }}/CiderRemote.xcarchive"
         run: |
           xcodebuild \
             -project "$XCODE_PROJECT" \
@@ -83,7 +85,10 @@ jobs:
         run: |
           set -euo pipefail
           APP_PATH="$ARCHIVE_PATH/Products/Applications/Cider Remote.app"
-          test -d "$APP_PATH" || { echo "App not found at $APP_PATH"; exit 1; }
+          if [ ! -d "$APP_PATH" ]; then
+            echo "App not found at $APP_PATH"
+            exit 1
+          fi
 
           mkdir -p "$RUNNER_TEMP/Payload"
           cp -R "$APP_PATH" "$RUNNER_TEMP/Payload/"
@@ -95,5 +100,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Cider-Remote-unsigned-IPA
-          path: ${{ runner.temp }}/CiderRemote-unsigned.ipa
+          path: "${{ runner.temp }}/CiderRemote-unsigned.ipa"
           if-no-files-found: error
